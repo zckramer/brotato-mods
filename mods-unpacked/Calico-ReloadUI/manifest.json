@@ -1,0 +1,22 @@
+{
+  "name": "ReloadUI",
+  "namespace": "Calico",
+  "version_number": "1.0.3",
+  "website_url": "",
+  "description": "Weapon icons with cooldown overlay near life/material UI.",
+  "dependencies": [],
+  "extra": {
+    "godot": {
+      "authors": ["Calico"],
+      "optional_dependencies": [],
+      "compatible_game_version": [],
+      "compatible_mod_loader_version": ["6.0.0"],
+      "incompatibilities": [],
+      "load_before": [],
+      "tags": ["ui", "overlay", "weapons"],
+      "config_schema": {},
+      "description_rich": "",
+      "image": ""
+    }
+  }
+}
