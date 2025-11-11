@@ -1204,11 +1204,6 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://weapons/weapon_stats/ranged_weapon_stats.gd"
 }, {
-"base": "Control",
-"class": "ReloadOverlay",
-"language": "GDScript",
-"path": "res://mods-unpacked/Calico-ReloadUI/extensions/ui/hud/player_ui_elements.gd"
-}, {
 "base": "ButtonWithIcon",
 "class": "RerollButton",
 "language": "GDScript",
@@ -1989,7 +1984,6 @@ _global_script_class_icons={
 "RangedWeapon": "",
 "RangedWeaponShootingBehavior": "",
 "RangedWeaponStats": "",
-"ReloadOverlay": "",
 "RerollButton": "",
 "RewardType": "",
 "Rhino": "",
