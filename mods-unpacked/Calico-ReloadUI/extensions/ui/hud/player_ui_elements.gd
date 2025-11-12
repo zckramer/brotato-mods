@@ -5,6 +5,7 @@ extends 'res://ui/hud/player_ui_elements.gd'
 var _mod_initialized: bool = false
 var _debug_frame_counter: int = 0
 var _current_player: Player = null
+var _process_connection_established: bool = false
 
 # Constants for weapon panel sizing
 const WEAPON_PANEL_SIZE = Vector2(64, 64)
@@ -40,7 +41,7 @@ func update_hud(player: Player) -> void:
 		_mod_initialized = true
 		print("ReloadUI: Mod initialized")
 	
-	# Update weapon displays
+	# Update weapon displays (called from game at intervals, also provides per-frame updates)
 	if _mod_initialized:
 		_update_custom_display(player)
 
@@ -75,12 +76,6 @@ func _update_custom_display(player: Player) -> void:
 	while panel_count < weapon_count:
 		var new_panel = _create_weapon_panel()
 		weapons_container.add_child(new_panel)
-		
-		# Connect the timer to update this specific weapon panel
-		var timer = new_panel.get_node_or_null("UpdateTimer")
-		if timer:
-			timer.connect("timeout", self, "_on_weapon_timer_timeout", [new_panel, weapons_container.get_child_count() - 1])
-		
 		panel_count += 1
 	
 	# Remove extra panels if needed
@@ -88,15 +83,10 @@ func _update_custom_display(player: Player) -> void:
 		weapons_container.get_child(panel_count - 1).queue_free()
 		panel_count -= 1
 	
-	# Update each weapon panel with current data (called from update_hud for state changes)
+	# Update each weapon panel with current data
+	# Note: update_hud is called frequently enough by the game for smooth updates
 	for i in range(weapon_count):
 		_update_weapon_panel(weapons_container.get_child(i), player.current_weapons[i], i == 0)
-
-
-func _on_weapon_timer_timeout(panel: Control, weapon_index: int) -> void:
-	# Update this specific weapon panel at 60 FPS
-	if _current_player and _current_player.current_weapons and weapon_index < _current_player.current_weapons.size():
-		_update_weapon_panel(panel, _current_player.current_weapons[weapon_index], weapon_index == 0)
 
 
 func _create_weapon_panel() -> Control:
@@ -168,13 +158,6 @@ func _create_weapon_panel() -> Control:
 	name_label.align = Label.ALIGN_CENTER
 	name_label.add_color_override("font_color", Color.white)
 	vbox.add_child(name_label)
-	
-	# Add a timer for this weapon to update its display independently
-	var update_timer = Timer.new()
-	update_timer.name = "UpdateTimer"
-	update_timer.wait_time = 0.016  # ~60 FPS
-	update_timer.autostart = true
-	panel.add_child(update_timer)
 	
 	return panel
 
