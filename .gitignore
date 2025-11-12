@@ -28,7 +28,6 @@ mono_crash.*.json
 *.ico
 
 
-/addons
 /backup
 /challenges
 /effects
