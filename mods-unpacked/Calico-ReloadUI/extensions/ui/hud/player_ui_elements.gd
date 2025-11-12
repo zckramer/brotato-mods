@@ -5,7 +5,7 @@ extends 'res://ui/hud/player_ui_elements.gd'
 var _mod_initialized: bool = false
 var _debug_frame_counter: int = 0
 var _current_player: Player = null
-var _process_connection_established: bool = false
+var _update_timer: Timer = null
 
 # Constants for weapon panel sizing
 const WEAPON_PANEL_SIZE = Vector2(64, 64)
@@ -21,40 +21,64 @@ func update_hud(player: Player) -> void:
 	# Cache player reference for timer updates
 	_current_player = player
 	
-	# Call parent's update_hud implementation
+	# Call parent's update_hud implementation (with safety checks)
 	if RunData.is_coop_run:
-		life_bar.self_modulate.a = 0.75
-		xp_bar.self_modulate.a = 0.75
+		if life_bar:
+			life_bar.self_modulate.a = 0.75
+		if xp_bar:
+			xp_bar.self_modulate.a = 0.75
 		var player_color = CoopService.get_player_color(player_index)
-		gold.gold_label.add_color_override("font_color", player_color)
-		gold.icon.modulate = player_color
+		if gold and gold.gold_label:
+			gold.gold_label.add_color_override("font_color", player_color)
+		if gold and gold.icon:
+			gold.icon.modulate = player_color
 
-	life_bar.update_value(player.current_stats.health, player.max_stats.health)
+	if life_bar and player and player.current_stats and player.max_stats:
+		life_bar.update_value(player.current_stats.health, player.max_stats.health)
 	update_life_label(player)
-	xp_bar.update_value(int(RunData.get_player_xp(player_index)), int(RunData.get_next_level_xp_needed(player_index)))
+	if xp_bar:
+		xp_bar.update_value(int(RunData.get_player_xp(player_index)), int(RunData.get_next_level_xp_needed(player_index)))
 	update_level_label()
-	gold.update_value(RunData.get_player_gold(player_index))
+	if gold:
+		gold.update_value(RunData.get_player_gold(player_index))
 	
 	# Initialize our custom UI on first update when we have access to scene
 	if not _mod_initialized and hud_container != null:
 		_initialize_custom_ui()
 		_mod_initialized = true
-		print("ReloadUI: Mod initialized")
+		print("ReloadUI: Mod initialized successfully")
 	
 	# Update weapon displays (called from game at intervals, also provides per-frame updates)
-	if _mod_initialized:
+	if _mod_initialized and player:
 		_update_custom_display(player)
 
 
 func _initialize_custom_ui() -> void:
+	if not hud_container:
+		print("ReloadUI: ERROR - hud_container is null during initialization")
+		return
+	
+	# Check if container already exists (avoid duplicates)
+	if hud_container.has_node("ReloadUI_WeaponsContainer"):
+		print("ReloadUI: Weapons container already exists, skipping initialization")
+		return
+	
 	# Create container for weapon display
 	var weapons_container = HBoxContainer.new()
 	weapons_container.name = "ReloadUI_WeaponsContainer"
 	
 	# Add to the HUD container
-	if hud_container:
-		hud_container.add_child(weapons_container)
-		print("ReloadUI: Custom UI initialized successfully!")
+	hud_container.add_child(weapons_container)
+	
+	# Create a timer for continuous updates (since update_hud isn't called every frame)
+	_update_timer = Timer.new()
+	_update_timer.name = "ReloadUI_UpdateTimer"
+	_update_timer.wait_time = 0.016  # ~60 FPS
+	_update_timer.autostart = true
+	hud_container.add_child(_update_timer)
+	_update_timer.connect("timeout", self, "_on_update_timer_timeout")
+	
+	print("ReloadUI: Custom UI container and update timer created")
 
 
 func _update_custom_display(player: Player) -> void:
@@ -87,6 +111,23 @@ func _update_custom_display(player: Player) -> void:
 	# Note: update_hud is called frequently enough by the game for smooth updates
 	for i in range(weapon_count):
 		_update_weapon_panel(weapons_container.get_child(i), player.current_weapons[i], i == 0)
+
+
+func _on_update_timer_timeout() -> void:
+	# Called every ~16ms (~60 FPS) to update weapon cooldown displays
+	if not _mod_initialized or not _current_player:
+		return
+	
+	if not hud_container:
+		return
+	
+	var weapons_container = hud_container.get_node_or_null("ReloadUI_WeaponsContainer")
+	if not weapons_container or not _current_player.current_weapons:
+		return
+	
+	# Update all weapon panels with current cooldown state
+	for i in range(min(weapons_container.get_child_count(), _current_player.current_weapons.size())):
+		_update_weapon_panel(weapons_container.get_child(i), _current_player.current_weapons[i], i == 0)
 
 
 func _create_weapon_panel() -> Control:

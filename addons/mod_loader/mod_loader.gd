@@ -233,13 +233,12 @@ func _load_mod_zips() -> Dictionary:
 	var zip_data: = {}
 
 	if not ModLoaderStore.ml_options.steam_workshop_enabled:
+		# Load local mod zips when Steam Workshop is disabled
 		var mods_folder_path: = _ModLoaderPath.get_path_to_mods()
-
-		
 		var loaded_zip_data: = _ModLoaderFile.load_zips_in_folder(mods_folder_path)
 		zip_data.merge(loaded_zip_data)
 	else:
-		
+		# Load Steam Workshop mods when enabled (keeps game and dev separate)
 		var loaded_workshop_zip_data: = _ModLoaderSteam.load_steam_workshop_zips()
 		zip_data.merge(loaded_workshop_zip_data)
 
@@ -249,75 +248,82 @@ func _load_mod_zips() -> Dictionary:
 
 
 func _setup_mods() -> int:
-	
+	# Scan unpacked mods from res://mods-unpacked/
+	# - In Editor: This maps to your physical dev folder (isolated development)
+	# - In Steam: This is the virtual filesystem from workshop .pck files
 	var unpacked_mods_path: = _ModLoaderPath.get_unpacked_mods_dir_path()
+	var unpacked_mods_count: = _scan_mods_in_directory(unpacked_mods_path, "mods-unpacked")
+	
+	ModLoaderLog.info("Setup complete: %s mods loaded from %s" % [unpacked_mods_count, unpacked_mods_path], LOG_NAME)
+	return unpacked_mods_count
 
+
+# Helper function to scan a directory for mods
+func _scan_mods_in_directory(mods_path: String, source_label: String) -> int:
 	var dir: = Directory.new()
-	if not dir.open(unpacked_mods_path) == OK:
-		ModLoaderLog.warning("Can't open unpacked mods folder %s." % unpacked_mods_path, LOG_NAME)
-		return - 1
+	if not dir.open(mods_path) == OK:
+		ModLoaderLog.info("Skipping %s mods folder (not found): %s" % [source_label, mods_path], LOG_NAME)
+		return 0
 	if not dir.list_dir_begin() == OK:
-		ModLoaderLog.error("Can't read unpacked mods folder %s." % unpacked_mods_path, LOG_NAME)
-		return - 1
+		ModLoaderLog.warning("Can't read %s mods folder: %s" % [source_label, mods_path], LOG_NAME)
+		return 0
 
-	var unpacked_mods_count: = 0
+	var mods_count: = 0
+	ModLoaderLog.info("Scanning %s mods in: %s" % [source_label, mods_path], LOG_NAME)
 	
 	while true:
-		
 		var mod_dir_name: = dir.get_next()
 
-		
 		if mod_dir_name == "":
-			
 			break
 
 		if (
-			
 			not dir.current_is_dir()
-			
 			or mod_dir_name.begins_with(".")
 		):
 			continue
 
 		if ModLoaderStore.ml_options.disabled_mods.has(mod_dir_name):
-			ModLoaderLog.info("Skipped setting up mod: \"%s\"" % mod_dir_name, LOG_NAME)
+			ModLoaderLog.info("Skipped setting up mod from %s: \"%s\"" % [source_label, mod_dir_name], LOG_NAME)
 			continue
 
-		
+		# Register mod if not already registered
 		if not ModLoaderStore.mod_data.has(mod_dir_name):
-			_init_mod_data(mod_dir_name)
-
-		unpacked_mods_count += 1
+			# Use custom path for local development mods
+			_init_mod_data_with_path(mod_dir_name, mods_path.plus_file(mod_dir_name))
+			mods_count += 1
+		else:
+			ModLoaderLog.info("Mod \"%s\" already loaded (skipping duplicate from %s)" % [mod_dir_name, source_label], LOG_NAME)
 
 	dir.list_dir_end()
-	return unpacked_mods_count
+	return mods_count
 
 
 
 
 
 func _init_mod_data(mod_id: String, zip_path: = "") -> void :
-		
+	# Default: use standard unpacked mods path
 	var local_mod_path: = _ModLoaderPath.get_unpacked_mods_dir_path().plus_file(mod_id)
+	_init_mod_data_with_path(mod_id, local_mod_path, zip_path)
 
+
+# New helper that allows specifying custom mod path (for local development mods)
+func _init_mod_data_with_path(mod_id: String, mod_path: String, zip_path: = "") -> void:
 	var mod: = ModData.new()
 	if not zip_path.empty():
 		mod.zip_name = _ModLoaderPath.get_file_name_from_path(zip_path)
 		mod.zip_path = zip_path
-	mod.dir_path = local_mod_path
+	mod.dir_path = mod_path
 	mod.dir_name = mod_id
 	var mod_overwrites_path: = mod.get_optional_mod_file_path(ModData.optional_mod_files.OVERWRITES)
 	mod.is_overwrite = _ModLoaderFile.file_exists(mod_overwrites_path)
 	mod.is_locked = true if mod_id in ModLoaderStore.ml_options.locked_mods else false
 	ModLoaderStore.mod_data[mod_id] = mod
 
-	
-	
-	
-	
-	
+	# Store file paths for debugging if enabled
 	if ModLoaderStore.DEBUG_ENABLE_STORING_FILEPATHS:
-		mod.file_paths = _ModLoaderPath.get_flat_view_dict(local_mod_path)
+		mod.file_paths = _ModLoaderPath.get_flat_view_dict(mod_path)
 
 
 
