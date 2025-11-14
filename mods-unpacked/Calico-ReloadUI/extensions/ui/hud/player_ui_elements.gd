@@ -13,9 +13,10 @@ var _weapon_panels: Array = []  # Pre-cached panel references
 const WEAPON_PANEL_SIZE = Vector2(64, 64)
 const WEAPON_ICON_SIZE = Vector2(48, 48)
 const MAX_NAME_LENGTH = 12
-const COOLDOWN_OVERLAY_COLOR = Color(1.0, 0.0, 0.0, 0.6)  # Red overlay during cooldown
-const READY_OVERLAY_COLOR = Color(0.0, 1.0, 0.0, 0.4)      # Green overlay when ready
-const FLASH_OVERLAY_COLOR = Color(1.0, 1.0, 0.0, 0.8)      # Bright yellow flash when firing
+const BORDER_WIDTH = 3.0
+const COOLDOWN_BORDER_COLOR = Color(1.0, 0.3, 0.0, 1.0)  # Orange border during cooldown
+const READY_BORDER_COLOR = Color(0.0, 1.0, 0.0, 1.0)      # Green border when ready
+const FIRING_BORDER_COLOR = Color(1.0, 1.0, 0.0, 1.0)     # Yellow border when firing
 const READY_THRESHOLD = 0.05  # Show as ready when cooldown < 5%
 
 
@@ -62,6 +63,9 @@ func _initialize_custom_ui() -> void:
 		print("ReloadUI: ERROR - hud_container is null during initialization")
 		return
 	
+	print("ReloadUI: Initializing custom UI, hud_container type: ", hud_container.get_class())
+	print("ReloadUI: hud_container children: ", hud_container.get_child_count())
+	
 	# Check if container already exists (avoid duplicates)
 	if hud_container.has_node("ReloadUI_WeaponsContainer"):
 		print("ReloadUI: Weapons container already exists, skipping initialization")
@@ -70,9 +74,12 @@ func _initialize_custom_ui() -> void:
 	# Create container for weapon display
 	_weapons_container = HBoxContainer.new()
 	_weapons_container.name = "ReloadUI_WeaponsContainer"
+	_weapons_container.rect_min_size = Vector2(200, 70)
+	_weapons_container.rect_position = Vector2(10, 200)  # Position it below other HUD elements
 	
 	# Add to the HUD container
 	hud_container.add_child(_weapons_container)
+	print("ReloadUI: Added weapons container at position ", _weapons_container.rect_position)
 	
 	# Create a timer for continuous updates (since update_hud isn't called every frame)
 	_update_timer = Timer.new()
@@ -89,12 +96,15 @@ func _sync_weapon_panels(weapon_count: int) -> void:
 	# Called ONLY when weapon count changes 
 	var panel_count = _weapon_panels.size()
 	
+	print("ReloadUI: Syncing weapon panels - current: ", panel_count, " needed: ", weapon_count)
+	
 	# Create new panels if needed
 	while panel_count < weapon_count:
 		var new_panel = _create_weapon_panel()
 		_weapons_container.add_child(new_panel)
 		_weapon_panels.append(new_panel)
 		panel_count += 1
+		print("ReloadUI: Created weapon panel #", panel_count)
 	
 	# Remove extra panels if needed
 	while panel_count > weapon_count:
@@ -142,42 +152,13 @@ func _create_weapon_panel() -> Control:
 	icon_rect.anchor_bottom = 1.0
 	icon_container.add_child(icon_rect)
 	
-	# Add cooldown overlay (red fills left-to-right during cooldown)
-	var cooldown_overlay = ColorRect.new()
-	cooldown_overlay.name = "CooldownOverlay"
-	cooldown_overlay.color = COOLDOWN_OVERLAY_COLOR
-	cooldown_overlay.anchor_top = 0.0
-	cooldown_overlay.anchor_bottom = 1.0
-	cooldown_overlay.anchor_left = 0.0  # Start at left edge
-	cooldown_overlay.anchor_right = 0.0  # Width will be controlled via rect_size.x
-	cooldown_overlay.rect_position = Vector2(0, 0)
-	cooldown_overlay.rect_size = Vector2(0, 0)  # Start with 0 width (no red)
-	cooldown_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	icon_container.add_child(cooldown_overlay)
-	
-	# Add ready overlay (full green when ready to fire)
-	var ready_overlay = ColorRect.new()
-	ready_overlay.name = "ReadyOverlay"
-	ready_overlay.color = READY_OVERLAY_COLOR
-	ready_overlay.anchor_left = 0.0
-	ready_overlay.anchor_top = 0.0
-	ready_overlay.anchor_right = 1.0
-	ready_overlay.anchor_bottom = 1.0
-	ready_overlay.visible = false  # Hidden by default, shown when ready
-	ready_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	icon_container.add_child(ready_overlay)
-	
-	# Add flash overlay (bright yellow when firing)
-	var flash_overlay = ColorRect.new()
-	flash_overlay.name = "FlashOverlay"
-	flash_overlay.color = FLASH_OVERLAY_COLOR
-	flash_overlay.anchor_left = 0.0
-	flash_overlay.anchor_top = 0.0
-	flash_overlay.anchor_right = 1.0
-	flash_overlay.anchor_bottom = 1.0
-	flash_overlay.visible = false  # Hidden by default, shown when is_shooting
-	flash_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	icon_container.add_child(flash_overlay)
+	# Add border overlay (draws colored outline without blocking background)
+	var border_overlay = Control.new()
+	border_overlay.name = "BorderOverlay"
+	border_overlay.anchor_right = 1.0
+	border_overlay.anchor_bottom = 1.0
+	border_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon_container.add_child(border_overlay)
 	
 	# Add weapon name label
 	var name_label = Label.new()
@@ -201,11 +182,9 @@ func _update_weapon_panel(panel: Control, weapon, is_first_weapon: bool) -> void
 	if name_label:
 		name_label.text = _get_formatted_weapon_name(weapon)
 
-	# Overlays
-	var cooldown_overlay = panel.get_node_or_null("VBox/IconContainer/CooldownOverlay")
-	var ready_overlay = panel.get_node_or_null("VBox/IconContainer/ReadyOverlay")
-	var flash_overlay = panel.get_node_or_null("VBox/IconContainer/FlashOverlay")
-	if not (cooldown_overlay and ready_overlay and flash_overlay):
+	# Border overlay
+	var border_overlay = panel.get_node_or_null("VBox/IconContainer/BorderOverlay")
+	if not border_overlay:
 		return
 
 	# Compute progress (elapsed / max)
@@ -248,23 +227,13 @@ func _update_weapon_panel(panel: Control, weapon, is_first_weapon: bool) -> void
 			progress = 1.0
 			state = "READY"
 
-	# Apply visual state
+	# Draw border based on state
 	if state == "READY":
-		ready_overlay.visible = true
-		cooldown_overlay.visible = false
-		flash_overlay.visible = false
+		_draw_border(border_overlay, READY_BORDER_COLOR)
 	elif state == "JUST_FIRED":
-		ready_overlay.visible = false
-		cooldown_overlay.visible = false
-		flash_overlay.visible = true  # Bright yellow flash on firing
+		_draw_border(border_overlay, FIRING_BORDER_COLOR)
 	else: # COOLING
-		ready_overlay.visible = false
-		cooldown_overlay.visible = true
-		flash_overlay.visible = false
-		# Bar grows from left (0px) to right (48px) as progress goes 0.0 → 1.0
-		var w = WEAPON_ICON_SIZE.x
-		cooldown_overlay.rect_position.x = 0
-		cooldown_overlay.rect_size.x = w * progress
+		_draw_border(border_overlay, COOLDOWN_BORDER_COLOR)
 
 	# Debug (first weapon, every 30 frames)
 	if is_first_weapon:
@@ -272,6 +241,52 @@ func _update_weapon_panel(panel: Control, weapon, is_first_weapon: bool) -> void
 		if _debug_frame_counter >= 30:
 			_debug_frame_counter = 0
 			print("ReloadUI: cur=", stepify(cur_cd,0.1), "/", stepify(max_cd,0.1), " progress=", stepify(progress,0.01), " state=", state, " shooting=", is_shooting, " fired=", has_fired)
+
+
+# Draw colored border on control
+func _draw_border(control: Control, color: Color) -> void:
+	if not control:
+		return
+	
+	# Clear any existing children (ColorRects for borders)
+	for child in control.get_children():
+		child.queue_free()
+	
+	var size = control.rect_size
+	if size.x <= 0 or size.y <= 0:
+		size = WEAPON_ICON_SIZE
+	
+	# Top border
+	var top = ColorRect.new()
+	top.color = color
+	top.rect_position = Vector2(0, 0)
+	top.rect_size = Vector2(size.x, BORDER_WIDTH)
+	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	control.add_child(top)
+	
+	# Bottom border
+	var bottom = ColorRect.new()
+	bottom.color = color
+	bottom.rect_position = Vector2(0, size.y - BORDER_WIDTH)
+	bottom.rect_size = Vector2(size.x, BORDER_WIDTH)
+	bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	control.add_child(bottom)
+	
+	# Left border
+	var left = ColorRect.new()
+	left.color = color
+	left.rect_position = Vector2(0, 0)
+	left.rect_size = Vector2(BORDER_WIDTH, size.y)
+	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	control.add_child(left)
+	
+	# Right border
+	var right = ColorRect.new()
+	right.color = color
+	right.rect_position = Vector2(size.x - BORDER_WIDTH, 0)
+	right.rect_size = Vector2(BORDER_WIDTH, size.y)
+	right.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	control.add_child(right)
 
 
 # Calculate weapon cooldown ratio (0.0 = ready, 1.0 = full cooldown)

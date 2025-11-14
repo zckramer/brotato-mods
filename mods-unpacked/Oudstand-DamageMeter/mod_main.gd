@@ -92,7 +92,7 @@ func _register_mod_options() -> void:
 
 
 func _setup_autoloads(mod_dir_path: String) -> void:
-	var charm_tracker := _create_autoload(
+	var _charm_tracker := _create_autoload(
 		mod_dir_path.plus_file("extensions/charm_tracker.gd"),
 		"DamageMeterCharmTracker"
 	)
