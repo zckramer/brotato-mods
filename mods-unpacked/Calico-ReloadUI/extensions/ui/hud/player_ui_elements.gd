@@ -21,6 +21,10 @@ const READY_THRESHOLD = 0.05  # Show as ready when cooldown < 5%
 
 
 func update_hud(player: Player) -> void:
+	print("========================================")
+	print("RELOADUI: UPDATE_HUD CALLED!!!")
+	print("========================================")
+	
 	# Cache player reference for timer updates
 	_current_player = player
 	
