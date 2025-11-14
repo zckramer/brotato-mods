@@ -26,6 +26,7 @@ mono_crash.*.json
 
 *.icns
 *.ico
+*.tscn
 
 
 /backup
