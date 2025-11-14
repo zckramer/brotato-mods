@@ -6,6 +6,8 @@ var _mod_initialized: bool = false
 var _debug_frame_counter: int = 0
 var _current_player: Player = null
 var _update_timer: Timer = null
+var _weapons_container: HBoxContainer = null
+var _weapon_panels: Array = []  # Pre-cached panel references
 
 # Constants for weapon panel sizing
 const WEAPON_PANEL_SIZE = Vector2(64, 64)
@@ -48,9 +50,11 @@ func update_hud(player: Player) -> void:
 		_mod_initialized = true
 		print("ReloadUI: Mod initialized successfully")
 	
-	# Update weapon displays (called from game at intervals, also provides per-frame updates)
-	if _mod_initialized and player:
-		_update_custom_display(player)
+	# Sync weapon panels when weapon count changes (not every frame!)
+	if _mod_initialized and player and player.current_weapons:
+		var weapon_count = player.current_weapons.size()
+		if _weapon_panels.size() != weapon_count:
+			_sync_weapon_panels(weapon_count)
 
 
 func _initialize_custom_ui() -> void:
@@ -64,11 +68,11 @@ func _initialize_custom_ui() -> void:
 		return
 	
 	# Create container for weapon display
-	var weapons_container = HBoxContainer.new()
-	weapons_container.name = "ReloadUI_WeaponsContainer"
+	_weapons_container = HBoxContainer.new()
+	_weapons_container.name = "ReloadUI_WeaponsContainer"
 	
 	# Add to the HUD container
-	hud_container.add_child(weapons_container)
+	hud_container.add_child(_weapons_container)
 	
 	# Create a timer for continuous updates (since update_hud isn't called every frame)
 	_update_timer = Timer.new()
@@ -81,53 +85,35 @@ func _initialize_custom_ui() -> void:
 	print("ReloadUI: Custom UI container and update timer created")
 
 
-func _update_custom_display(player: Player) -> void:
-	if not hud_container:
-		return
-		
-	var weapons_container = hud_container.get_node_or_null("ReloadUI_WeaponsContainer")
-	if not weapons_container:
-		return
-	
-	if not player.current_weapons:
-		return
-	
-	# Sync panel count with weapon count
-	var weapon_count = player.current_weapons.size()
-	var panel_count = weapons_container.get_child_count()
+func _sync_weapon_panels(weapon_count: int) -> void:
+	# Called ONLY when weapon count changes 
+	var panel_count = _weapon_panels.size()
 	
 	# Create new panels if needed
 	while panel_count < weapon_count:
 		var new_panel = _create_weapon_panel()
-		weapons_container.add_child(new_panel)
+		_weapons_container.add_child(new_panel)
+		_weapon_panels.append(new_panel)
 		panel_count += 1
 	
 	# Remove extra panels if needed
 	while panel_count > weapon_count:
-		weapons_container.get_child(panel_count - 1).queue_free()
+		var removed_panel = _weapon_panels.pop_back()
+		removed_panel.queue_free()
 		panel_count -= 1
 	
-	# Update each weapon panel with current data
-	# Note: update_hud is called frequently enough by the game for smooth updates
-	for i in range(weapon_count):
-		_update_weapon_panel(weapons_container.get_child(i), player.current_weapons[i], i == 0)
+	print("ReloadUI: Synced to ", weapon_count, " weapon panels")
 
 
 func _on_update_timer_timeout() -> void:
-	# Called every ~16ms (~60 FPS) to update weapon cooldown displays
-	if not _mod_initialized or not _current_player:
+	# Called every ~16ms (~60 FPS) - ONLY update weapon panel visuals
+	if not _current_player or not _current_player.current_weapons:
 		return
 	
-	if not hud_container:
-		return
-	
-	var weapons_container = hud_container.get_node_or_null("ReloadUI_WeaponsContainer")
-	if not weapons_container or not _current_player.current_weapons:
-		return
-	
-	# Update all weapon panels with current cooldown state
-	for i in range(min(weapons_container.get_child_count(), _current_player.current_weapons.size())):
-		_update_weapon_panel(weapons_container.get_child(i), _current_player.current_weapons[i], i == 0)
+	# Fast path: just update the visuals, no lookups or checks
+	var weapon_count = min(_weapon_panels.size(), _current_player.current_weapons.size())
+	for i in range(weapon_count):
+		_update_weapon_panel(_weapon_panels[i], _current_player.current_weapons[i], i == 0)
 
 
 func _create_weapon_panel() -> Control:
@@ -232,35 +218,31 @@ func _update_weapon_panel(panel: Control, weapon, is_first_weapon: bool) -> void
 	var has_fired = ("_nb_shots_taken" in weapon and weapon._nb_shots_taken > 0)
 	var is_shooting = ("_is_shooting" in weapon and weapon._is_shooting)
 
-	var progress = 0.0  # 0.0 just fired, 1.0 ready
+	var progress = 0.0  # 0.0 empty bar (just fired), 1.0 full bar (ready)
 	var state = "READY"
 	
 	if max_cd > 0.0:
-		# Priority 1: If actively shooting, show flash ONLY if cur is very low (just started cooldown)
-		if is_shooting and cur_cd < (max_cd * 0.2):
-			# Only flash during first 20% of cooldown cycle to avoid long yellow periods
-			progress = 0.0
+		# _current_cooldown counts DOWN from ~max_cd to 0
+		# When cur_cd reaches 0, weapon is ready to fire
+		# Progress: 0.0 = just fired (full cooldown remaining), 1.0 = ready (no cooldown remaining)
+		progress = 1.0 - clamp(cur_cd / max_cd, 0.0, 1.0)
+		
+		# State priority:
+		# 1. READY: Cooldown finished (cur_cd at or near 0)
+		if cur_cd <= 0.0:
+			state = "READY"
+			progress = 1.0
+		# 2. JUST_FIRED: Brief flash during actual shooting animation
+		elif is_shooting:
 			state = "JUST_FIRED"
-		# Priority 2: Weapon is ready if cooldown elapsed
-		elif cur_cd >= max_cd:
-			progress = 1.0
-			state = "READY"
-		# Priority 3: Wave start - never fired yet
-		elif cur_cd == 0.0 and not has_fired:
-			progress = 1.0
-			state = "READY"
-		# Priority 4: Cooling down (cur < max)
+			# Progress stays wherever it is in the cooldown
+		# 3. COOLING: Counting down from max to 0
 		else:
-			# When cur=0 after firing, treat as very start of cooldown (tiny progress)
-			if cur_cd == 0.0:
-				progress = 0.01  # Show as barely started instead of 0
-			else:
-				progress = clamp(cur_cd / max_cd, 0.0, 1.0)
 			state = "COOLING"
 	else:
 		# No cooldown stat: always ready unless shooting
 		if is_shooting:
-			progress = 0.0
+			progress = 1.0  # Full bar, but yellow flash
 			state = "JUST_FIRED"
 		else:
 			progress = 1.0
@@ -271,16 +253,15 @@ func _update_weapon_panel(panel: Control, weapon, is_first_weapon: bool) -> void
 		ready_overlay.visible = true
 		cooldown_overlay.visible = false
 		flash_overlay.visible = false
-		cooldown_overlay.rect_size.x = 0
 	elif state == "JUST_FIRED":
 		ready_overlay.visible = false
 		cooldown_overlay.visible = false
 		flash_overlay.visible = true  # Bright yellow flash on firing
-		cooldown_overlay.rect_size.x = 0
 	else: # COOLING
 		ready_overlay.visible = false
 		cooldown_overlay.visible = true
 		flash_overlay.visible = false
+		# Bar grows from left (0px) to right (48px) as progress goes 0.0 → 1.0
 		var w = WEAPON_ICON_SIZE.x
 		cooldown_overlay.rect_position.x = 0
 		cooldown_overlay.rect_size.x = w * progress

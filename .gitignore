@@ -22,11 +22,10 @@ mono_crash.*.json
 *.log
 *.png
 *.import
-.*
-
 *.icns
 *.ico
 *.tscn
+.*
 
 
 /backup
