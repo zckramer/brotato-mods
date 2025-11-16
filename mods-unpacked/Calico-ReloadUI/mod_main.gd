@@ -28,9 +28,14 @@ func _install_extensions(mod_dir_path: String) -> void:
 	# Install Main extension to inject weapon cooldown displays
 	ModLoaderMod.install_script_extension(extensions_dir.plus_file("main_extension.gd"))
 	
-	# Install ChallengeService extension to fix null save data crashes (bugfix for editor mode)
-	var singletons_dir := extensions_dir.plus_file("singletons")
-	ModLoaderMod.install_script_extension(singletons_dir.plus_file("challenge_service.gd"))
+	# Install ChallengeService extension only if running from editor (prevents null save crashes)
+	# This is a dev-only fix and can be removed for production releases
+	if OS.has_feature("editor"):
+		var singletons_dir := extensions_dir.plus_file("singletons")
+		var challenge_service_path = singletons_dir.plus_file("challenge_service.gd")
+		var file = File.new()
+		if file.file_exists(challenge_service_path):
+			ModLoaderMod.install_script_extension(challenge_service_path)
 
 
 func _get_mod_options() -> Node:
@@ -61,9 +66,21 @@ func _register_mod_options() -> void:
 			},
 			{
 				"type": "toggle",
-				"id": "show_cooldown_overlay",
-				"label": "RELOADUI_SHOW_COOLDOWN_OVERLAY_LABEL",
+				"id": "show_tier_backgrounds",
+				"label": "RELOADUI_SHOW_TIER_BACKGROUNDS_LABEL",
 				"default": true
+			},
+			{
+				"type": "toggle",
+				"id": "show_cooldown_dots",
+				"label": "RELOADUI_SHOW_COOLDOWN_DOTS_LABEL",
+				"default": true
+			},
+			{
+				"type": "toggle",
+				"id": "hide_during_waves",
+				"label": "RELOADUI_HIDE_DURING_WAVES_LABEL",
+				"default": false
 			}
 		],
 		"info_text": "RELOADUI_INFO_TEXT"

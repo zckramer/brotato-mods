@@ -416,3 +416,35 @@ Rebuild WeaponData cache when:
 - Wave transitions (weapons may change)
 
 Safe to cache per `_physics_process()` frame - weapons don't change mid-wave.
+
+## ModOptions Integration
+
+### Settings Access Pattern
+```gdscript
+# 1. Get ModOptions reference via ModLoader
+var mod_loader = get_node_or_null("/root/ModLoader")
+var mod_options_mod = mod_loader.get_node_or_null("Oudstand-ModOptions")
+var mod_options = mod_options_mod.get_node_or_null("ModOptions")
+
+# 2. Connect to config changes
+mod_options.connect("config_changed", self, "_on_config_changed")
+
+# 3. Read setting value
+var value = mod_options.get_value("ReloadUI", "show_weapon_icons")
+
+# 4. Handle change signal
+func _on_config_changed(mod_id: String, option_id: String, new_value) -> void:
+    if mod_id == "ReloadUI":
+        match option_id:
+            "show_weapon_icons":
+                _show_icons = new_value
+```
+
+### Available Settings
+- `show_weapon_icons` (bool): Show/hide weapon icon textures
+- `show_tier_backgrounds` (bool): Show/hide tier-colored backgrounds
+- `show_cooldown_dots` (bool): Show/hide cooldown status dots
+- `hide_during_waves` (bool): Keep UI hidden during combat (only show in shop)
+
+### Settings Registration
+Done in `mod_main.gd` via `_register_mod_options()` called deferred in `_ready()`.

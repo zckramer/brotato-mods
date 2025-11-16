@@ -5,11 +5,77 @@ const MOD_NAME := "Calico-ReloadUI"
 var _reload_ui_injected: bool = false
 var _weapon_displays: Array = []  # One per player
 var _weapon_data_cache: Dictionary = {}  # Cache for WeaponData lookups
+var _mod_options: Node = null  # Reference to ModOptions
+
+# Settings cache
+var _show_icons: bool = true
+var _show_backgrounds: bool = true
+var _show_dots: bool = true
+var _hide_during_waves: bool = false
 
 func _enter_tree() -> void:
 	if not _reload_ui_injected:
 		call_deferred("_inject_reload_ui")
+		call_deferred("_connect_to_mod_options")
 		_reload_ui_injected = true
+
+
+func _connect_to_mod_options() -> void:
+	# Get ModOptions reference
+	var mod_loader = get_node_or_null("/root/ModLoader")
+	if not mod_loader:
+		return
+	
+	var mod_options_mod = mod_loader.get_node_or_null("Oudstand-ModOptions")
+	if not mod_options_mod:
+		return
+	
+	_mod_options = mod_options_mod.get_node_or_null("ModOptions")
+	if not _mod_options:
+		return
+	
+	# Connect to settings change signal
+	if not _mod_options.is_connected("config_changed", self, "_on_config_changed"):
+		_mod_options.connect("config_changed", self, "_on_config_changed")
+	
+	# Load initial settings
+	_load_settings()
+
+
+func _load_settings() -> void:
+	if not _mod_options:
+		return
+	
+	_show_icons = _mod_options.get_value("ReloadUI", "show_weapon_icons")
+	if _show_icons == null:
+		_show_icons = true
+	
+	_show_backgrounds = _mod_options.get_value("ReloadUI", "show_tier_backgrounds")
+	if _show_backgrounds == null:
+		_show_backgrounds = true
+	
+	_show_dots = _mod_options.get_value("ReloadUI", "show_cooldown_dots")
+	if _show_dots == null:
+		_show_dots = true
+	
+	_hide_during_waves = _mod_options.get_value("ReloadUI", "hide_during_waves")
+	if _hide_during_waves == null:
+		_hide_during_waves = false
+
+
+func _on_config_changed(mod_id: String, option_id: String, new_value) -> void:
+	if mod_id != "ReloadUI":
+		return
+	
+	match option_id:
+		"show_weapon_icons":
+			_show_icons = new_value
+		"show_tier_backgrounds":
+			_show_backgrounds = new_value
+		"show_cooldown_dots":
+			_show_dots = new_value
+		"hide_during_waves":
+			_hide_during_waves = new_value
 
 
 func _inject_reload_ui() -> void:
@@ -145,28 +211,41 @@ func _update_weapon_panel(panel: Control, weapon_node) -> void:
 	var icon = panel.get_node_or_null("VBox/IconContainer/Icon")
 	
 	if icon and is_instance_valid(weapon_node):
-		# Match weapon_node (Node2D) to weapon_data (Resource) via cache
-		var key = "%s_t%d" % [weapon_node.weapon_id, weapon_node.tier]
-		if _weapon_data_cache.has(key):
-			var weapon_data = _weapon_data_cache[key]
-			icon.texture = weapon_data.icon
+		# Apply icon visibility setting
+		icon.visible = _show_icons
+		
+		if _show_icons:
+			# Match weapon_node (Node2D) to weapon_data (Resource) via cache
+			var key = "%s_t%d" % [weapon_node.weapon_id, weapon_node.tier]
+			if _weapon_data_cache.has(key):
+				var weapon_data = _weapon_data_cache[key]
+				icon.texture = weapon_data.icon
 	
 	# Update background color based on tier (using ItemService from game)
 	var icon_bg = panel.get_node_or_null("VBox/IconContainer/IconBg")
 	if icon_bg and "tier" in weapon_node:
-		var stylebox = StyleBoxFlat.new()
-		ItemService.change_inventory_element_stylebox_from_tier(stylebox, weapon_node.tier, 0.5)  # 0.5 alpha for transparency
+		icon_bg.visible = _show_backgrounds
 		
-		# Rounded corners
-		stylebox.corner_radius_top_left = 6
-		stylebox.corner_radius_top_right = 6
-		stylebox.corner_radius_bottom_left = 6
-		stylebox.corner_radius_bottom_right = 6
-		
-		icon_bg.add_stylebox_override("panel", stylebox)
+		if _show_backgrounds:
+			var stylebox = StyleBoxFlat.new()
+			ItemService.change_inventory_element_stylebox_from_tier(stylebox, weapon_node.tier, 0.5)  # 0.5 alpha for transparency
+			
+			# Rounded corners
+			stylebox.corner_radius_top_left = 6
+			stylebox.corner_radius_top_right = 6
+			stylebox.corner_radius_bottom_left = 6
+			stylebox.corner_radius_bottom_right = 6
+			
+			icon_bg.add_stylebox_override("panel", stylebox)
 	
 	var dot = panel.get_node_or_null("VBox/IconContainer/Dot")
 	if not dot:
+		return
+	
+	# Apply dot visibility setting
+	dot.visible = _show_dots
+	
+	if not _show_dots:
 		return
 	
 	# Calculate cooldown state
@@ -200,7 +279,8 @@ func _on_EntitySpawner_wave_ended() -> void:
 func _on_EntitySpawner_wave_started() -> void:
 	._on_EntitySpawner_wave_started()
 	
-	# Show weapon displays when wave starts
-	for i in range(min(_players.size(), _weapon_displays.size())):
-		if is_instance_valid(_weapon_displays[i]):
-			_weapon_displays[i].visible = true
+	# Show weapon displays when wave starts (unless hide_during_waves is enabled)
+	if not _hide_during_waves:
+		for i in range(min(_players.size(), _weapon_displays.size())):
+			if is_instance_valid(_weapon_displays[i]):
+				_weapon_displays[i].visible = true
