@@ -1,52 +1,7 @@
-# Godot 4+ specific ignores
-.godot/
-.nomedia
+*
+/*
 
-# Godot-specific ignores
-.import/
-export.cfg
-export_credentials.cfg
+!mods-unpacked/Calico-ReloadUI/AI_CONTEXT.md
+!mods-unpacked/Calico-ReloadUI/**
+!mods-unpacked/Calico-ReloadUI/
 
-# Imported translations (automatically generated from CSV files)
-*.translation
-
-# Mono-specific ignores
-.mono/
-data_*/
-mono_crash.*.json
-
-*.exe
-*.dll
-*.zip
-*.pck
-*.log
-*.png
-*.import
-*.icns
-*.ico
-*.tscn
-.*
-
-
-/backup
-/challenges
-/effects
-/behaviors
-/effect_behaviors
-/entities
-/global
-/items
-/mods/*.zip
-/mods/*.pck
-/MODS_WIP/
-/overlap
-/particles
-/projectiles
-/resources
-/singletons
-/tools
-/visual_effects
-/weapons
-/zones
-/_EXPORT
-/ui
