@@ -269,11 +269,6 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://effects/items/convert_stat_effect.gd"
 }, {
-"base": "Node",
-"class": "CooldownHelper",
-"language": "GDScript",
-"path": "res://mods-unpacked/Oudstand-DamageMeter/utils/cooldown_helper.gd"
-}, {
 "base": "CoopShopHint",
 "class": "CoopBanShopHint",
 "language": "GDScript",
@@ -1802,7 +1797,6 @@ _global_script_class_icons={
 "ConsumableData": "",
 "ConsumableHealingEffect": "",
 "ConvertStatEffect": "",
-"CooldownHelper": "",
 "CoopBanShopHint": "",
 "CoopButton": "",
 "CoopItemPopup": "",
