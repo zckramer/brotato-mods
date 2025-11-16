@@ -25,7 +25,11 @@ mono_crash.*.json
 *.icns
 *.ico
 *.tscn
-.*
+
+# Hidden files (but allow .gitignore itself)
+.DS_Store
+.vscode/
+.idea/
 
 /temp_backup
 /export_backups
@@ -52,3 +56,5 @@ mono_crash.*.json
 /zones
 /_EXPORT
 /ui
+pause.tscn
+main.tscn
