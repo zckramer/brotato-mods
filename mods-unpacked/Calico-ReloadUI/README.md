@@ -14,23 +14,11 @@ Weapon cooldown visualization mod for Brotato.
 
 ## Dependencies
 
-This mod requires:
-- **Oudstand-ModOptions**: For configuration UI
-- **Oudstand-DamageMeter**: Provides CooldownHelper utility for cooldown calculations
+- **Oudstand-ModOptions**: Provides settings UI for mod configuration
 
 ## Architecture
 
-Calico-ReloadUI is a **standalone mod** that uses DamageMeter's utilities without modifying DamageMeter's code. This ensures:
-- Clean separation of concerns
-- No conflicts with DamageMeter updates
-- Ability to disable ReloadUI without affecting DamageMeter
-- Proper mod ecosystem etiquette (we don't modify other people's mods)
-
-### How It Works
-
-1. **CooldownHelper Utility**: Lives in DamageMeter as a shared utility that any mod can use
-2. **ReloadUI Extensions**: Our own extensions that implement the UI features
-3. **Dependency Chain**: ReloadUI → DamageMeter → ModOptions
+ReloadUI extends main.gd to inject weapon cooldown displays directly into the HUD.
 
 ## Configuration
 
@@ -43,7 +31,7 @@ Access settings via the "Reload UI" tab in ModOptions:
 
 ### Extension Points
 
-- `extensions/ui/hud/player_ui_elements.gd`: Main UI extension for cooldown display
+- `extensions/main_extension.gd`: Main extension that injects weapon displays into HUD
 - `extensions/singletons/challenge_service.gd`: Bugfix extension for editor mode
 
 ### Cooldown Detection

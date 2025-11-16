@@ -8,12 +8,7 @@ func _init() -> void:
 	
 	var mod_dir_path := ModLoaderMod.get_unpacked_dir().plus_file("Calico-ReloadUI")
 	_load_translations(mod_dir_path)
-	
-	# Install PlayerUIElements extension for weapon cooldown display
-	ModLoaderMod.install_script_extension("res://mods-unpacked/Calico-ReloadUI/extensions/ui/hud/player_ui_elements.gd")
-	
-	# Install ChallengeService extension to fix null save data crashes (bugfix for editor mode)
-	ModLoaderMod.install_script_extension("res://mods-unpacked/Calico-ReloadUI/extensions/singletons/challenge_service.gd")
+	_install_extensions(mod_dir_path)
 
 func _ready() -> void:
 	ModLoaderLog.info("Ready", RELOAD_UI_LOG)
@@ -25,6 +20,17 @@ func _ready() -> void:
 func _load_translations(mod_dir_path: String) -> void:
 	var translations_dir := mod_dir_path.plus_file("translations")
 	ModLoaderMod.add_translation(translations_dir.plus_file("ReloadUI.en.translation"))
+
+
+func _install_extensions(mod_dir_path: String) -> void:
+	var extensions_dir := mod_dir_path.plus_file("extensions")
+	
+	# Install Main extension to inject weapon cooldown displays
+	ModLoaderMod.install_script_extension(extensions_dir.plus_file("main_extension.gd"))
+	
+	# Install ChallengeService extension to fix null save data crashes (bugfix for editor mode)
+	var singletons_dir := extensions_dir.plus_file("singletons")
+	ModLoaderMod.install_script_extension(singletons_dir.plus_file("challenge_service.gd"))
 
 
 func _get_mod_options() -> Node:

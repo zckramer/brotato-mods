@@ -27,7 +27,9 @@ mono_crash.*.json
 *.tscn
 .*
 
-
+/temp_backup
+/export_backups
+/mods-unpacked/Calico-ReloadUI/backup
 /backup
 /challenges
 /effects

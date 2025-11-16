@@ -3,10 +3,9 @@
   "namespace": "Calico",
   "version_number": "1.0.4",
   "website_url": "",
-  "description": "Weapon icons with cooldown overlay near life/material UI. Optional integration with DamageMeter for weapon cooldown visualization.",
+  "description": "Weapon icons with cooldown indicators near life/material UI.",
   "dependencies": [
-    "Oudstand-ModOptions",
-    "Oudstand-DamageMeter"
+    "Oudstand-ModOptions"
   ],
   "extra": {
     "godot": {
