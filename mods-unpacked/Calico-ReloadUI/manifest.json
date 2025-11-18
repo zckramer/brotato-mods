@@ -4,13 +4,11 @@
   "version_number": "1.0.4",
   "website_url": "",
   "description": "Weapon icons with cooldown indicators near life/material UI.",
-  "dependencies": [
-    "Oudstand-ModOptions"
-  ],
+  "dependencies": [],
   "extra": {
     "godot": {
       "authors": ["Calico"],
-      "optional_dependencies": [],
+      "optional_dependencies": ["Oudstand-ModOptions"],
       "compatible_game_version": [],
       "compatible_mod_loader_version": ["6.0.0"],
       "incompatibilities": [],
