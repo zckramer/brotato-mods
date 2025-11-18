@@ -11,6 +11,8 @@
 !mods-unpacked/Calico-ReloadUI/*.json
 !mods-unpacked/Calico-ReloadUI/translations/
 !mods-unpacked/Calico-ReloadUI/translations/*.csv
+!mods-unpacked/Calico-ReloadUI/extensions/
+!mods-unpacked/Calico-ReloadUI/extensions/main_extension.gd
 
 # Ignore extensions (dev-only files)
 # Ignore Godot auto-generated files
