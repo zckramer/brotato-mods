@@ -1,7 +1,19 @@
+# Ignore everything
 *
 /*
 
-!mods-unpacked/Calico-ReloadUI/AI_CONTEXT.md
-!mods-unpacked/Calico-ReloadUI/**
+# Whitelist mod directory structure
+!.gitignore
+!mods-unpacked/
 !mods-unpacked/Calico-ReloadUI/
+!mods-unpacked/Calico-ReloadUI/*.md
+!mods-unpacked/Calico-ReloadUI/*.gd
+!mods-unpacked/Calico-ReloadUI/*.json
+!mods-unpacked/Calico-ReloadUI/translations/
+!mods-unpacked/Calico-ReloadUI/translations/*.csv
+
+# Ignore extensions (dev-only files)
+# Ignore Godot auto-generated files
+mods-unpacked/**/*.import
+mods-unpacked/**/*.translation
 
