@@ -2,6 +2,10 @@
 *
 /*
 
+# Whitelist AI documentation
+!.ai-docs/
+!.ai-docs/*.md
+
 # Whitelist mod directory structure
 !.gitignore
 !mods-unpacked/
