@@ -13,12 +13,16 @@ var settings := {
 	"stats_position": "top_right"
 }
 
+# Analytics tracker singleton
+var analytics_tracker: Node = null
+
 func _init() -> void:
 	ModLoaderLog.info("Init", ANALYTATO_LOG)
 	
 	var mod_dir_path := ModLoaderMod.get_unpacked_dir().plus_file("Calico-Analytato")
 	_load_translations(mod_dir_path)
 	_load_settings()
+	_init_analytics_tracker(mod_dir_path)
 	_install_extensions(mod_dir_path)
 
 func _ready() -> void:
@@ -45,13 +49,26 @@ func _load_settings() -> void:
 	ModLoaderLog.debug("Default settings initialized: %s" % str(settings), ANALYTATO_LOG)
 
 
+func _init_analytics_tracker(mod_dir_path: String) -> void:
+	var tracker_script = load(mod_dir_path.plus_file("extensions/singletons/analytics_tracker.gd"))
+	analytics_tracker = tracker_script.new()
+	analytics_tracker.name = "AnalyticsTracker"
+	
+	# Add to the scene tree so _ready() gets called
+	add_child(analytics_tracker)
+	
+	ModLoaderLog.info("Analytics tracker initialized", ANALYTATO_LOG)
+
+
 func _install_extensions(mod_dir_path: String) -> void:
 	var extensions_dir := mod_dir_path.plus_file("extensions")
 	
-	# Install shop extension to add analytics button
+	# No main extension needed - tracker is autonomous!
+	
+	# Install Shop extension to add analytics button
 	ModLoaderMod.install_script_extension(extensions_dir.plus_file("shop_extension.gd"))
 	
-	# Install title screen extension to add analytics button to main menu
+	# Install Title Screen extension to add analytics button to main menu
 	ModLoaderMod.install_script_extension(extensions_dir.plus_file("title_screen_extension.gd"))
 	
 	ModLoaderLog.info("Extensions installed", ANALYTATO_LOG)
