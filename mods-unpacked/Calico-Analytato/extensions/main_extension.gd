@@ -1,17 +1,17 @@
 extends "res://main.gd"
 
-# Extension to track enemy deaths for analytics AND show HUD overlay
+# Extension to track enemy deaths for analytics
 
 const ANALYTATO_LOG = "Calico-Analytato"
 
 var _tracker: Node = null
 var _wave_active: bool = false
 var _run_in_progress: bool = false
-var _stats_label: Label = null
+# var _stats_label: Label = null  # Shelved - HUD overlay feature
 
 func _enter_tree() -> void:
 	call_deferred("_init_analytics_tracking")
-	call_deferred("_inject_stats_overlay")
+	# call_deferred("_inject_stats_overlay")  # Shelved - HUD overlay feature
 
 
 func _init_analytics_tracking() -> void:
@@ -111,43 +111,39 @@ func _on_entity_died(entity, _die_args) -> void:
 	_tracker.on_enemy_killed(enemy_type)
 
 
-func _inject_stats_overlay() -> void:
-	# Create stats label for HUD
-	_stats_label = Label.new()
-	_stats_label.name = "AnalytatoStatsOverlay"
-	_stats_label.rect_position = Vector2(10, 100)  # Top left
-	_stats_label.add_color_override("font_color", Color(1.0, 0.7, 0.8, 0.9))  # Pink
-	_stats_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	
-	var hud = get_node_or_null("UI/HUD")
-	if hud:
-		hud.add_child(_stats_label)
-		ModLoaderLog.info("Stats overlay injected into HUD", ANALYTATO_LOG)
+# === SHELVED: HUD Overlay Feature ===
+# Not currently working, can be revisited later
 
+# func _inject_stats_overlay() -> void:
+# 	_stats_label = Label.new()
+# 	_stats_label.name = "AnalytatoStatsOverlay"
+# 	_stats_label.rect_position = Vector2(10, 100)
+# 	_stats_label.add_color_override("font_color", Color(1.0, 0.7, 0.8, 0.9))
+# 	_stats_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+# 	
+# 	var hud = get_node_or_null("UI/HUD")
+# 	if hud:
+# 		hud.add_child(_stats_label)
+# 		ModLoaderLog.info("Stats overlay injected into HUD", ANALYTATO_LOG)
 
-func _process(_delta: float) -> void:
-	._process(_delta)
-	_update_stats_display()
+# func _process(_delta: float) -> void:
+# 	._process(_delta)
+# 	_update_stats_display()
 
-
-func _update_stats_display() -> void:
-	if not _stats_label or not _tracker or not is_instance_valid(_stats_label):
-		return
-	
-	# Only show during active run and wave
-	if not _run_in_progress or not _wave_active:
-		_stats_label.visible = false
-		return
-	
-	_stats_label.visible = true
-	
-	var current_run = _tracker.get_current_run_stats()
-	
-	# Count entities and projectiles for real-time stats
-	var entity_spawner = get_node_or_null("EntitySpawner")
-	var enemy_count = entity_spawner.enemies.size() if entity_spawner else 0
-	
-	var projectile_container = get_node_or_null("Projectiles")
-	var projectile_count = projectile_container.get_child_count() if projectile_container else 0
-	
-	_stats_label.text = "Kills: %d | Enemies: %d | Projectiles: %d" % [current_run.kills, enemy_count, projectile_count]
+# func _update_stats_display() -> void:
+# 	if not _stats_label or not _tracker or not is_instance_valid(_stats_label):
+# 		return
+# 	
+# 	if not _run_in_progress or not _wave_active:
+# 		_stats_label.visible = false
+# 		return
+# 	
+# 	_stats_label.visible = true
+# 	
+# 	var current_run = _tracker.get_current_run_stats()
+# 	var entity_spawner = get_node_or_null("EntitySpawner")
+# 	var enemy_count = entity_spawner.enemies.size() if entity_spawner else 0
+# 	var projectile_container = get_node_or_null("Projectiles")
+# 	var projectile_count = projectile_container.get_child_count() if projectile_container else 0
+# 	
+# 	_stats_label.text = "Kills: %d | Enemies: %d | Projectiles: %d" % [current_run.kills, enemy_count, projectile_count]

@@ -9,9 +9,42 @@ Analytato is a combat analytics mod for Brotato that tracks detailed statistics 
 ### Core Components
 
 1. **mod_main.gd** - Entry point, configuration management
-2. **extensions/** - Game class extensions for tracking hooks
-3. **singletons/** - Global state management (stats storage)
-4. **ui/** - Overlay display components
+2. **extensions/main_extension.gd** - Signal-based entity death tracking
+3. **singletons/analytics_tracker.gd** - Stats storage and persistence
+4. **ui/** - Menu and overlay display components
+
+### Signal-Based Tracking Pattern
+
+**✅ Current Implementation (Zero-Overhead):**
+
+- Extend `main.gd` to hook `_on_EntitySpawner_entity_spawned(entity)`
+- Connect to each entity's `"died"` signal on spawn
+- Event-driven: Code only runs when entities actually die
+- **Performance**: O(1) per death event
+
+```gdscript
+# main_extension.gd
+func _on_EntitySpawner_entity_spawned(entity) -> void:
+    ._on_EntitySpawner_entity_spawned(entity)
+    entity.connect("died", self, "_on_entity_died")
+
+func _on_entity_died(entity, die_args) -> void:
+    _tracker.on_enemy_killed(entity.enemy_id)
+```
+
+**❌ Previous Polling Approach (Removed):**
+
+- Used Timer to poll game state every 0.5-1.0 seconds
+- Scanned `entity_spawner.enemies` array to detect deaths
+- High CPU overhead: ~600 operations/minute
+- **Problem**: Runs constantly even when nothing changes
+
+**Why Signals Are Better:**
+
+- Event-driven: Code only executes on actual events
+- Zero polling overhead: No timer callbacks
+- Lower memory: No tracking dictionaries needed
+- Scalable: Works equally well with 10 or 1000 enemies
 
 ### Planned Extensions
 

@@ -102,6 +102,78 @@ var result = MyClass.add(5, 3)
 
 ### 2. Control Flow
 
+#### Signals (Events) - ALWAYS Prefer Over Polling
+
+**Signals are Godot's event system - use them for performance.**
+
+```gdscript
+# Define signal
+signal entity_died(entity, args)
+signal wave_completed()
+
+# Emit signal
+emit_signal("entity_died", self, die_args)
+
+# Connect to signal (target, method_name)
+entity.connect("died", self, "_on_entity_died")
+
+# Disconnect
+if entity.is_connected("died", self, "_on_entity_died"):
+    entity.disconnect("died", self, "_on_entity_died")
+
+# Check if connected
+if not signal_source.is_connected("signal_name", target, "method_name"):
+    signal_source.connect("signal_name", target, "method_name")
+```
+
+**✅ Signal-Based Pattern (BEST PRACTICE - Zero Overhead)**:
+
+```gdscript
+# Extension pattern: Hook into game events
+extends "res://main.gd"
+
+func _on_EntitySpawner_entity_spawned(entity) -> void:
+    ._on_EntitySpawner_entity_spawned(entity)
+
+    # Connect to entity death signal
+    if not entity.is_connected("died", self, "_on_entity_died"):
+        entity.connect("died", self, "_on_entity_died")
+
+func _on_entity_died(entity, die_args) -> void:
+    # React to death event - Code ONLY runs when entity dies
+    process_entity_death(entity)
+```
+
+**❌ Polling Pattern (AVOID - Expensive CPU Cost)**:
+
+```gdscript
+# BAD: Constantly checking state with Timer
+var _poll_timer: Timer
+func _ready():
+    _poll_timer = Timer.new()
+    _poll_timer.wait_time = 0.5
+    _poll_timer.connect("timeout", self, "_poll_entities")
+    add_child(_poll_timer)
+
+func _poll_entities():
+    # Runs every 0.5s even when nothing happens
+    for entity in get_all_entities():  # Scans 100+ entities repeatedly
+        if entity_is_dead(entity):
+            process_death()  # Wasteful check
+```
+
+**Performance Comparison:**
+
+- **Signals**: O(1) per event - Runs ONLY when event fires
+- **Polling**: O(N × frequency) - Runs constantly, scans all objects
+- **Example**: 100 enemies, 0.5s polling = 200 checks/second
+- **vs Signals**: 100 total calls (one per actual death)
+
+**When to Use Each:**
+
+- **Signals**: Entity deaths, spawns, state changes (✅ Always prefer)
+- **Polling**: External APIs, file watching (only when signals unavailable)
+
 #### If/Else/Elif
 
 ```gdscript

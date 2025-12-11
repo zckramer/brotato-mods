@@ -14,55 +14,50 @@ var _show_dots: bool = true
 var _hide_during_waves: bool = false
 
 func _enter_tree() -> void:
-	print("[ReloadUI] _enter_tree called")
 	if not _reload_ui_injected:
 		call_deferred("_inject_reload_ui")
 		call_deferred("_connect_to_mod_options")
 		_reload_ui_injected = true
-		print("[ReloadUI] Injection deferred")
 
 
 func _connect_to_mod_options() -> void:
-	# Get ModOptions reference
-	var mod_loader = get_node_or_null("/root/ModLoader")
-	if not mod_loader:
-		return
-	
-	var mod_options_mod = mod_loader.get_node_or_null("Oudstand-ModOptions")
-	if not mod_options_mod:
-		return
-	
-	_mod_options = mod_options_mod.get_node_or_null("ModOptions")
+	_mod_options = _get_mod_options_node()
 	if not _mod_options:
 		return
 	
-	# Connect to settings change signal
 	if not _mod_options.is_connected("config_changed", self, "_on_config_changed"):
 		_mod_options.connect("config_changed", self, "_on_config_changed")
 	
-	# Load initial settings
 	_load_settings()
+
+
+# Helper: Get ModOptions node reference
+func _get_mod_options_node() -> Node:
+	var mod_loader = get_node_or_null("/root/ModLoader")
+	if not mod_loader:
+		return null
+	
+	var mod_options_mod = mod_loader.get_node_or_null("Oudstand-ModOptions")
+	if not mod_options_mod:
+		return null
+	
+	return mod_options_mod.get_node_or_null("ModOptions")
 
 
 func _load_settings() -> void:
 	if not _mod_options:
 		return
 	
-	_show_icons = _mod_options.get_value("ReloadUI", "show_weapon_icons")
-	if _show_icons == null:
-		_show_icons = true
-	
-	_show_backgrounds = _mod_options.get_value("ReloadUI", "show_tier_backgrounds")
-	if _show_backgrounds == null:
-		_show_backgrounds = true
-	
-	_show_dots = _mod_options.get_value("ReloadUI", "show_cooldown_dots")
-	if _show_dots == null:
-		_show_dots = true
-	
-	_hide_during_waves = _mod_options.get_value("ReloadUI", "hide_during_waves")
-	if _hide_during_waves == null:
-		_hide_during_waves = false
+	_show_icons = _get_setting("show_weapon_icons", true)
+	_show_backgrounds = _get_setting("show_tier_backgrounds", true)
+	_show_dots = _get_setting("show_cooldown_dots", true)
+	_hide_during_waves = _get_setting("hide_during_waves", false)
+
+
+# Helper: Get setting with default fallback
+func _get_setting(key: String, default_value):
+	var value = _mod_options.get_value("ReloadUI", key)
+	return value if value != null else default_value
 
 
 func _on_config_changed(mod_id: String, option_id: String, new_value) -> void:
@@ -81,35 +76,33 @@ func _on_config_changed(mod_id: String, option_id: String, new_value) -> void:
 
 
 func _inject_reload_ui() -> void:
-	print("[ReloadUI] _inject_reload_ui called")
 	for i in range(4):
-		var player_idx = str(i + 1)
-		var parent_path = "UI/HUD/LifeContainerP%s" % player_idx
-		var parent_node = get_node_or_null(parent_path)
-		
-		print("[ReloadUI] Checking ", parent_path, ": ", parent_node)
-		
-		if not is_instance_valid(parent_node):
-			print("[ReloadUI] Parent not found or invalid: ", parent_path)
-			continue
-		
-		var display_name = "ReloadUI_WeaponDisplayP%s" % player_idx
-		if parent_node.has_node(display_name):
-			print("[ReloadUI] Display already exists: ", display_name)
-			continue
-		
-		# Create weapon display container
-		var weapon_display = HBoxContainer.new()
-		weapon_display.name = display_name
-		weapon_display.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		parent_node.add_child(weapon_display)
-		
-		print("[ReloadUI] Created display: ", display_name, " in ", parent_path)
-		_weapon_displays.append(weapon_display)
+		var display = _create_player_display(i)
+		if display:
+			_weapon_displays.append(display)
+
+
+# Helper: Create weapon display for a specific player
+func _create_player_display(player_idx: int) -> HBoxContainer:
+	var parent_path = "UI/HUD/LifeContainerP%d" % (player_idx + 1)
+	var parent_node = get_node_or_null(parent_path)
+	
+	if not is_instance_valid(parent_node):
+		return null
+	
+	var display_name = "ReloadUI_WeaponDisplayP%d" % (player_idx + 1)
+	if parent_node.has_node(display_name):
+		return null
+	
+	var weapon_display = HBoxContainer.new()
+	weapon_display.name = display_name
+	weapon_display.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent_node.add_child(weapon_display)
+	
+	return weapon_display
 
 
 func _on_EntitySpawner_players_spawned(players: Array) -> void:
-	print("[ReloadUI] Players spawned: ", players.size())
 	._on_EntitySpawner_players_spawned(players)
 	call_deferred("_setup_weapon_displays", players)
 
@@ -138,12 +131,7 @@ func _update_weapon_display(display: HBoxContainer, player: Player) -> void:
 	if not is_instance_valid(player) or not player.current_weapons:
 		return
 	
-	# Build cache of WeaponData for fast icon lookups
-	_weapon_data_cache.clear()
-	var weapon_data_array = RunData.players_data[player.player_index].weapons
-	for weapon_data in weapon_data_array:
-		var key = "%s_t%d" % [weapon_data.weapon_id, weapon_data.tier]
-		_weapon_data_cache[key] = weapon_data
+	_build_weapon_data_cache(player.player_index)
 	
 	var weapon_count = player.current_weapons.size()
 	var panel_count = display.get_child_count()
@@ -161,6 +149,15 @@ func _update_weapon_display(display: HBoxContainer, player: Player) -> void:
 	# Update each panel
 	for i in range(weapon_count):
 		_update_weapon_panel(display.get_child(i), player.current_weapons[i])
+
+
+# Helper: Build cache of WeaponData for fast lookups by weapon_id + tier
+func _build_weapon_data_cache(player_index: int) -> void:
+	_weapon_data_cache.clear()
+	var weapon_data_array = RunData.players_data[player_index].weapons
+	for weapon_data in weapon_data_array:
+		var key = "%s_t%d" % [weapon_data.weapon_id, weapon_data.tier]
+		_weapon_data_cache[key] = weapon_data
 
 
 const WEAPON_ICON_SIZE = Vector2(48, 48)

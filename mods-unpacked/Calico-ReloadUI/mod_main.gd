@@ -38,14 +38,16 @@ func _install_extensions(mod_dir_path: String) -> void:
 			ModLoaderMod.install_script_extension(challenge_service_path)
 
 
+# Helper: Get ModOptions node if available
 func _get_mod_options() -> Node:
-	# Get sibling mod node (both are children of ModLoader)
-	var parent = get_parent()
-	if not parent:
+	var mod_loader = get_node_or_null("/root/ModLoader")
+	if not mod_loader:
 		return null
-	var mod_options_mod = parent.get_node_or_null("Oudstand-ModOptions")
+	
+	var mod_options_mod = mod_loader.get_node_or_null("Oudstand-ModOptions")
 	if not mod_options_mod:
 		return null
+	
 	return mod_options_mod.get_node_or_null("ModOptions")
 
 

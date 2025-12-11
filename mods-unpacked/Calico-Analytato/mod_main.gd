@@ -63,7 +63,8 @@ func _init_analytics_tracker(mod_dir_path: String) -> void:
 func _install_extensions(mod_dir_path: String) -> void:
 	var extensions_dir := mod_dir_path.plus_file("extensions")
 	
-	# No main extension needed - tracker is autonomous!
+	# Install Main extension for signal-based entity death tracking
+	ModLoaderMod.install_script_extension(extensions_dir.plus_file("main_extension.gd"))
 	
 	# Install Shop extension to add analytics button
 	ModLoaderMod.install_script_extension(extensions_dir.plus_file("shop_extension.gd"))

@@ -199,6 +199,38 @@ Base damage modified by:
 
 #### Enemy Management
 
+**Entities** (enemies, neutrals, structures):
+
+- Managed by `EntitySpawner` node
+- Each entity emits `"died"` signal on death
+- Located in `_entity_spawner.enemies` array
+
+**Signal-Based Tracking Pattern:**
+
+```gdscript
+# Hook entity spawning in main_extension.gd
+func _on_EntitySpawner_entity_spawned(entity) -> void:
+    ._on_EntitySpawner_entity_spawned(entity)
+
+    # Connect to death signal for tracking
+    entity.connect("died", self, "_on_entity_died")
+
+func _on_entity_died(entity, die_args) -> void:
+    # Zero-overhead event-driven tracking
+    var enemy_type = entity.enemy_id
+    analytics_tracker.on_enemy_killed(enemy_type)
+```
+
+**Key Signals:**
+
+- `entity.died(entity, args)` - Emitted when entity dies
+- `EntitySpawner.entity_spawned(entity)` - New entity created
+- `EntitySpawner.wave_started()` - Combat begins
+- `EntitySpawner.wave_ended()` - Combat ends
+
+**❌ Avoid Polling Entities:**
+Scanning `entity_spawner.enemies` array every frame/timer is expensive. Use signals instead.
+
 - Spawned by `EntitySpawner` node
 - Managed in pools for performance
 - Different types: Basic, Elite, Boss
