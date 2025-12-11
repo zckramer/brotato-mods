@@ -4,7 +4,7 @@
 
 ## 📚 Documentation Structure
 
-This project has **5 AI documentation files**, each serving a specific purpose:
+This project has **6 AI documentation files**, each serving a specific purpose:
 
 ### 1. **AI_CONTEXT.md** (This File)
 
@@ -19,7 +19,7 @@ This project has **5 AI documentation files**, each serving a specific purpose:
 - **Contents**: Complete GDScript language guide, node system, common patterns
 - **⚠️ CRITICAL**: This project uses Godot 3.6.2, NOT 4.x!
 
-### 3. **GAME_SYSTEMS.md** ⭐ NEW
+### 3. **GAME_SYSTEMS.md** ⭐
 
 - **Purpose**: High-level Brotato game mechanics documentation (living document)
 - **When to read**: Working with ANY game system (stats, waves, shop, economy, etc.)
@@ -33,7 +33,14 @@ This project has **5 AI documentation files**, each serving a specific purpose:
 - **Contents**: Weapon Node2D vs WeaponData, icon access, extension strategies, performance patterns
 - **Update this**: When discovering new weapon-specific patterns or architectural details
 
-### 5. **README.md**
+### 5. **THIRD_PARTY_ANALYSIS_WORKFLOW.md** ⭐ NEW
+
+- **Purpose**: Process for analyzing other developers' mods (READ-ONLY)
+- **When to read**: Before importing or studying third-party mods
+- **Contents**: Analysis workflow, documentation templates, learning patterns, attribution rules
+- **⚠️ CRITICAL**: NEVER modify third-party code, only analyze and document learnings
+
+### 6. **README.md**
 
 - **Purpose**: User-facing documentation
 - **When to read**: Understanding features from user perspective
@@ -105,20 +112,22 @@ mods-unpacked/Calico-ReloadUI/**
 
 ```
 mods-unpacked/Calico-ReloadUI/
-├── manifest.json                  # Mod metadata, version, dependencies
-├── mod_main.gd                    # Entry point, registers ModOptions
-├── README.md                      # User documentation
-├── AI_CONTEXT.md                  # THIS FILE - Quick orientation & check-in
-├── AI_GODOT_REFERENCE.md          # Godot 3.6.2 & GDScript complete reference
-├── AI_CHECKIN_PROMPT.md           # Quick session start reference
-├── GAME_SYSTEMS.md                # Core game mechanics documentation (living doc)
-├── WEAPON_ARCHITECTURE.md         # Brotato weapon system deep-dive (living doc)
+├── manifest.json                      # Mod metadata, version, dependencies
+├── mod_main.gd                        # Entry point, registers ModOptions
+├── README.md                          # User documentation
+├── AI_CONTEXT.md                      # THIS FILE - Quick orientation & check-in
+├── AI_CHECKIN_PROMPT.md               # Quick session start reference
+├── AI_GODOT_REFERENCE.md              # Godot 3.6.2 & GDScript complete reference
+├── GAME_SYSTEMS.md                    # Core game mechanics documentation (living doc)
+├── WEAPON_ARCHITECTURE.md             # Brotato weapon system deep-dive (living doc)
+├── THIRD_PARTY_ANALYSIS_WORKFLOW.md   # Process for analyzing other mods (READ-ONLY)
+├── ANALYSIS_*.md                      # Third-party mod analysis documents (optional)
 ├── extensions/
-│   ├── main_extension.gd          # Extends main.gd, injects UI
+│   ├── main_extension.gd              # Extends main.gd, injects UI
 │   └── singletons/
-│       └── challenge_service.gd   # Dev-only bugfix (editor mode)
+│       └── challenge_service.gd       # Dev-only bugfix (editor mode)
 └── translations/
-    └── ReloadUI.csv               # Translation strings for UI
+    └── ReloadUI.csv                   # Translation strings for UI
 ```
 
 ## What This Mod Does
