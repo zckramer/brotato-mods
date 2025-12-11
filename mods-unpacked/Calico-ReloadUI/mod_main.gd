@@ -4,14 +4,14 @@ const RELOAD_UI_LOG = "Calico-ReloadUI"
 const MOD_ID := "Calico-ReloadUI"
 
 func _init() -> void:
-	ModLoaderLog.info("Init", RELOAD_UI_LOG)
+	# ModLoaderLog.info("Init", RELOAD_UI_LOG)
 	
 	var mod_dir_path := ModLoaderMod.get_unpacked_dir().plus_file("Calico-ReloadUI")
 	_load_translations(mod_dir_path)
 	_install_extensions(mod_dir_path)
 
 func _ready() -> void:
-	ModLoaderLog.info("Ready", RELOAD_UI_LOG)
+	# ModLoaderLog.info("Ready", RELOAD_UI_LOG)
 	
 	# Register options with ModOptions (after it's loaded)
 	call_deferred("_register_mod_options")
@@ -38,21 +38,23 @@ func _install_extensions(mod_dir_path: String) -> void:
 			ModLoaderMod.install_script_extension(challenge_service_path)
 
 
+# Helper: Get ModOptions node if available
 func _get_mod_options() -> Node:
-	# Get sibling mod node (both are children of ModLoader)
-	var parent = get_parent()
-	if not parent:
+	var mod_loader = get_node_or_null("/root/ModLoader")
+	if not mod_loader:
 		return null
-	var mod_options_mod = parent.get_node_or_null("Oudstand-ModOptions")
+	
+	var mod_options_mod = mod_loader.get_node_or_null("Oudstand-ModOptions")
 	if not mod_options_mod:
 		return null
+	
 	return mod_options_mod.get_node_or_null("ModOptions")
 
 
 func _register_mod_options() -> void:
 	var mod_options = _get_mod_options()
 	if not mod_options:
-		ModLoaderLog.info("ModOptions not found, cooldown options unavailable", MOD_ID)
+		# ModLoaderLog.info("ModOptions not found, cooldown options unavailable", MOD_ID)
 		return
 
 	mod_options.register_mod_options("ReloadUI", {
