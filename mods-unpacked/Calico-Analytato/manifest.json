@@ -1,0 +1,22 @@
+{
+  "name": "Analytato",
+  "namespace": "Calico",
+  "version_number": "0.1.0",
+  "website_url": "",
+  "description": "Combat analytics and statistics tracker for Brotato. Track damage sources, kills by type, dodges, bullets fired/hit, and more.",
+  "dependencies": [],
+  "extra": {
+    "godot": {
+      "authors": ["Calico"],
+      "optional_dependencies": ["Oudstand-ModOptions"],
+      "compatible_game_version": [],
+      "compatible_mod_loader_version": ["6.0.0"],
+      "incompatibilities": [],
+      "load_before": [],
+      "tags": ["ui", "stats", "analytics", "tracking"],
+      "config_schema": {},
+      "description_rich": "",
+      "image": ""
+    }
+  }
+}

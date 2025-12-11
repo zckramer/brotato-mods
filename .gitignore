@@ -13,6 +13,15 @@
 !mods-unpacked/Calico-ReloadUI/translations/*.csv
 !mods-unpacked/Calico-ReloadUI/extensions/
 !mods-unpacked/Calico-ReloadUI/extensions/main_extension.gd
+!mods-unpacked/Calico-Analytato/
+!mods-unpacked/Calico-Analytato/.gitignore
+!mods-unpacked/Calico-Analytato/*.md
+!mods-unpacked/Calico-Analytato/*.gd
+!mods-unpacked/Calico-Analytato/*.json
+!mods-unpacked/Calico-Analytato/translations/
+!mods-unpacked/Calico-Analytato/translations/*.csv
+!mods-unpacked/Calico-Analytato/extensions/
+!mods-unpacked/Calico-Analytato/extensions/**/*.gd
 
 # Ignore extensions (dev-only files)
 # Ignore Godot auto-generated files
